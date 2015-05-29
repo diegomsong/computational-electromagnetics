@@ -1,0 +1,121 @@
+% Simulation parameters.
+SIZE = 512; % No. of spatial steps
+MaxTime = SIZE*8; % No. of time steps
+PulseWidth = SIZE/4; % Controls width of Gaussian Pulse
+td = PulseWidth; % Temporal delay in pulse.
+imp0 = 377.0; % Impedence of free space
+source = 3; % Location of source
+Ra = 150e-6;
+
+% Constants.
+pi = 3.141592654;
+e0 = (1e-9)/(36*pi);
+u0 = (1e-7)*4*pi;
+c = 1/sqrt(e0*u0);
+
+dt = .125e-14;
+dz = 0.75e-6;
+Sc = c * dt/dz
+
+% Choice of source.
+% 1. Gaussian 2. Sine wave 3. Ricker wavelet
+SourceChoice = 2;
+
+l = PulseWidth*dz;
+f = c/(1*l)
+fmax = 1/(2*dt)
+w = 2*pi*f;
+k0 = w/c; % Free space wave number.
+% Ricker wavelet parameters.
+if SourceChoice == 2
+    fp = f; % Peak frequency
+    dr = PulseWidth*dt*2; % Delay
+end
+
+% Material
+Partition = floor(Ra/dz)%SIZE/4;
+er1 = 1;
+er2 = 1;
+ur1 = 1;
+ur2 = 1;
+sig1 = 0;
+sig2 = 100;
+sigm1 = 0;
+sigm2 = 0;
+
+c1 = 1/sqrt(er1*e0*ur1*u0);
+c2 = 1/sqrt(er2*e0*ur2*u0);
+Sc1 = c1 * dt/dz
+Sc2 = c2 * dt/dz
+
+eps = ones(SIZE, 1);
+mu = ones(SIZE, 1);
+sig = ones(SIZE, 1);
+sigm = ones(SIZE, 1);
+
+eps(1:Partition-1) = e0*er1;
+eps(Partition) = e0*(er1+er2)/2;
+eps(Partition+1:SIZE) = e0*er2;
+mu(1:Partition-1) = u0*ur1;
+mu(Partition:SIZE) = u0*ur2;
+
+sig(1:Partition-1) = sig1;
+sig(Partition) = (sig1+sig2)/2;
+sig(Partition+1:SIZE) = sig2;
+sigm(1:Partition-1) = sigm1;
+sigm(Partition:SIZE) = sigm2;
+
+% Initialization.
+Ex = zeros(SIZE, MaxTime); % x-component of E-field
+Hy = zeros(SIZE, MaxTime); % y-component of H-field
+PLOT1(1) = 0; % Data for plotting.
+
+% Outer loop for time-stepping.
+tic
+for q = 2:MaxTime
+    % Calculation of Hy using update difference equation for Hy. This is time step q.
+    Hy(1:SIZE-1,q) = (1-sigm(1:SIZE-1)*dt./(2*mu(1:SIZE-1)))./(1+sigm(1:SIZE-1)*dt./(2*mu(1:SIZE-1))).*Hy(1:SIZE-1,q-1) + ((Ex(1:SIZE-1,q-1) - Ex(2:SIZE,q-1)) .* ((dt./(mu(1:SIZE-1)*dz))./(1+sigm(1:SIZE-1)*dt./(2*mu(1:SIZE-1)))));
+    % ABC for H at SIZE.
+    Hy(SIZE,q) = Hy(SIZE-1,q-1) + (Sc-1)/(Sc+1)*(Hy(SIZE-1,q) - Hy(SIZE,q-1));
+    
+    % Calculation of Ex using updated difference equation for Ex. This is time step q+1/2.
+    Ex(2:SIZE,q) = (1-sig(2:SIZE)*dt./(2*eps(2:SIZE)))./(1+sig(2:SIZE)*dt./(2*eps(2:SIZE))).*Ex(2:SIZE, q-1) + ((dt./(eps(2:SIZE)*dz))./(1+sig(2:SIZE)*dt./(2*eps(2:SIZE)))).*(Hy(1:SIZE-1, q) - Hy(2:SIZE, q));
+    % ABC for E at 1.
+    Ex(1,q) = Ex(2,q-1) + (Sc-1)/(Sc+1)*(Ex(2,q) - Ex(1,q-1));
+    
+    % Lossless code for reference.
+    % Calculation of Hy using update difference equation for Hy. This is time step q.
+    %Hy(1:SIZE-1,q) = Hy(1:SIZE-1,q-1) + ( ( Ex(1:SIZE-1,q-1) - Ex(2:SIZE,q-1) ) * dt/(u0*dz) );
+    % ABC for H at SIZE.
+    %Hy(SIZE,q) = Hy(SIZE-1,q-1) + (Sc-1)/(Sc+1)*(Hy(SIZE-1,q) - Hy(SIZE,q-1) );
+    
+    % Calculation of Ex using updated difference equation for Ex. This is time step q+1/2.
+    %Ex(2:SIZE,q) = Ex(2:SIZE, q-1) + ( dt/(e0*dz)*(Hy(1:SIZE-1, q) - Hy(2:SIZE, q)) );
+    % ABC for E at 1.
+    %Ex(1,q) = Ex(2,q-1) + (Sc-1)/(Sc+1)*(Ex(2,q) - Ex(2,q-1));
+    
+    % Source.
+    if SourceChoice == 1
+    Ex(source,q) = Ex(source,q) + exp( -1*((q-td)/(PulseWidth/4))^2 ) * Sc;
+    elseif SourceChoice == 2
+    Ex(source,q) = Ex(source,q) + sin(2*pi*f*(q)*dt) * Sc;
+    elseif SourceChoice == 3
+    Ex(source,q) = Ex(source,q) + (1-2*(pi*fp*(q*dt-dr))^2)*exp(-1*(pi*fp*(q*dt-dr))^2) * Sc;
+    end
+    
+    % Activating a plane-wave source.
+    %Ex(source,q) = Ex(source,q) + exp( -1*((q-td)/(PulseWidth/4))^2 ) * Sc;
+end
+toc
+% Simulation animation.
+for i=1:MaxTime
+    figure (2)
+    hold off
+    plot([(Partition)*dz/Ra (Partition)*dz/Ra], [-1.1 1.1], 'Color', 'r');
+    hold on
+    plot((0:SIZE-1)*dz/Ra,Ex(:,i))
+    xlim([0 (SIZE-1)*dz/Ra])
+    ylim([-1.1 1.1])
+    xlabel('r/Ra')
+    ylabel('Electric field (Ex)')
+end
