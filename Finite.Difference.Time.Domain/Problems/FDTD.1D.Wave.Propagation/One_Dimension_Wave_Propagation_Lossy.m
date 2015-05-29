@@ -4,7 +4,7 @@ MaxTime = SIZE*4; % No. of time steps
 PulseWidth = SIZE/4; % Controls width of Gaussian Pulse
 td = PulseWidth; % Temporal delay in pulse.
 imp0 = 377.0; % Impedence of free space
-source = 10; % Location of source
+source = 3; % Location of source
 
 % Constants.
 pi = 3.141592654;
@@ -12,9 +12,24 @@ e0 = (1e-9)/(36*pi);
 u0 = (1e-7)*4*pi;
 c = 1/sqrt(e0*u0);
 
-dt = 1e-12;
-dz = 3e-4;
+dt = .5e-11;
+dz = 3e-3;
 Sc = c * dt/dz
+
+% Choice of source.
+% 1. Gaussian 2. Sine wave 3. Ricker wavelet
+SourceChoice = 2;
+
+l = PulseWidth*dz;
+f = c/(1*l)
+fmax = 1/(2*dt)
+w = 2*pi*f;
+k0 = w/c; % Free space wave number.
+% Ricker wavelet parameters.
+if SourceChoice == 2
+    fp = f; % Peak frequency
+    dr = PulseWidth*dt*2; % Delay
+end
 
 % Material
 Partition = SIZE/4;
@@ -23,7 +38,7 @@ er2 = 1;
 ur1 = 1;
 ur2 = 1;
 sig1 = 0;
-sig2 = 0.1;
+sig2 = 0.001;
 sigm1 = 0;
 sigm2 = 0;
 
@@ -65,7 +80,7 @@ for q = 2:MaxTime
     % Calculation of Ex using updated difference equation for Ex. This is time step q+1/2.
     Ex(2:SIZE,q) = (1-sig(2:SIZE)*dt./(2*eps(2:SIZE)))./(1+sig(2:SIZE)*dt./(2*eps(2:SIZE))).*Ex(2:SIZE, q-1) + ((dt./(eps(2:SIZE)*dz))./(1+sig(2:SIZE)*dt./(2*eps(2:SIZE)))).*(Hy(1:SIZE-1, q) - Hy(2:SIZE, q));
     % ABC for E at 1.
-    Ex(1,q) = Ex(2,q-1) + (Sc-1)/(Sc+1)*(Ex(2,q) - Ex(2,q-1));
+    Ex(1,q) = Ex(2,q-1) + (Sc-1)/(Sc+1)*(Ex(2,q) - Ex(1,q-1));
     
     % Lossless code for reference.
     % Calculation of Hy using update difference equation for Hy. This is time step q.
@@ -78,18 +93,27 @@ for q = 2:MaxTime
     % ABC for E at 1.
     %Ex(1,q) = Ex(2,q-1) + (Sc-1)/(Sc+1)*(Ex(2,q) - Ex(2,q-1));
     
-    % Activating a plane-wave source.
+    % Source.
+    if SourceChoice == 1
     Ex(source,q) = Ex(source,q) + exp( -1*((q-td)/(PulseWidth/4))^2 ) * Sc;
+    elseif SourceChoice == 2
+    Ex(source,q) = Ex(source,q) + sin(2*pi*f*(q)*dt) * Sc;
+    elseif SourceChoice == 3
+    Ex(source,q) = Ex(source,q) + (1-2*(pi*fp*(q*dt-dr))^2)*exp(-1*(pi*fp*(q*dt-dr))^2) * Sc;
+    end
+    
+    % Activating a plane-wave source.
+    %Ex(source,q) = Ex(source,q) + exp( -1*((q-td)/(PulseWidth/4))^2 ) * Sc;
 end
 toc
 % Simulation animation.
 for i=1:MaxTime
     figure (2)
     hold off
-    plot([Partition-1 Partition-1], [-1 1], 'Color', 'r');
+    plot([Partition-1 Partition-1], [-1.1 1.1], 'Color', 'r');
     hold on
     plot ( Ex(:,i) )
-    axis([0 SIZE -0.6 0.6])
+    axis([0 SIZE -1.1 1.1])
     xlabel('Spatial step (k)')
     ylabel('Electric field (Ex)')
 end
