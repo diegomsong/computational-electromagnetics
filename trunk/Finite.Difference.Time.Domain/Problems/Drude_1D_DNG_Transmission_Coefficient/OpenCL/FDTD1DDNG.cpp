@@ -638,7 +638,7 @@ int CFDTD1DDNG::DryRunCPU()
 			Ex(i,nf) = Ex(i,n0) + (Hy(i-1,nf)-Hy(i,nf))*dt/(e0*dz);
 		}
 		// ABC for Ex at i=0;
-		Ex(0,nf) = Ex(1,n0) + (Sc-1)/(Sc+1)*(Ex(1,nf)-Ex(1,n0));
+		Ex(0,nf) = Ex(1,n0) + (Sc-1)/(Sc+1)*(Ex(1,nf)-Ex(0,n0));
 
 		// Source.
 		if (SourceChoice == 1)
@@ -694,7 +694,7 @@ int CFDTD1DDNG::RunSimulationCPU(bool SaveFields)
 			Ex(i,nf) = ae[i]*(Dx(i,nf)-2*Dx(i,n0)+Dx(i,np)) + be[i]*(Dx(i,nf)-Dx(i,np)) + ce[i]*(2*Ex(i,n0)-Ex(i,np)) + de[i]*(2*Ex(i,n0)+Ex(i,np)) + ee[i]*(Ex(i,np));
 		}
 		// ABC for Ex at i=0;
-		Ex(0,nf) = Ex(1,n0) + (Sc-1)/(Sc+1)*(Ex(1,nf)-Ex(1,n0));
+		Ex(0,nf) = Ex(1,n0) + (Sc-1)/(Sc+1)*(Ex(1,nf)-Ex(0,n0));
 		Dx(0,nf) = e0*Ex(0,nf);
 
 		// Source.
