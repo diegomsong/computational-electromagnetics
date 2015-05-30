@@ -14,7 +14,7 @@ SnapshotInterval = 32; % Amount of time delay between snaps.
 
 % Choice of source.
 % 1. Gaussian 2. Sine wave 3. Ricker wavelet
-SourceChoice = 2;
+SourceChoice = 1;
 
 % Constants.
 c = 3e8;
@@ -112,7 +112,7 @@ for q = 0:MaxTime
     Ex(2:SIZE,n2) = Ex(2:SIZE, n1) + ( dt/(e0*dz)*(Hy(1:SIZE-1, n2) - Hy(2:SIZE, n2)) );
     
     % ABC for E at 1.
-    Ex(1,n2) = Ex(2,n1) + (Sc-1)/(Sc+1)*(Ex(2,n2) - Ex(2,n1));
+    Ex(1,n2) = Ex(2,n1) + (Sc-1)/(Sc+1)*(Ex(2,n2) - Ex(1,n1));
     
     % Source.
     if SourceChoice == 1
@@ -164,7 +164,7 @@ for q = 0:MaxTime
     Ex(:,n2) = a.*(Dx(:,n2)-2*Dx(:,n1)+Dx(:,3))+b.*(Dx(:,n2)-Dx(:,3))+c.*(2*Ex(:,n1)-Ex(:,3))+d.*(2*Ex(:,n1)+Ex(:,3))+e.*(Ex(:,3));
     
     % ABC for E at 1.
-    Ex(1,n2) = Ex(2,n1) + (Sc-1)/(Sc+1)*(Ex(2,n2) - Ex(2,n1));
+    Ex(1,n2) = Ex(2,n1) + (Sc-1)/(Sc+1)*(Ex(2,n2) - Ex(1,n1));
     Dx(1,n2) = e0*Ex(1,n2);
     
     % Source.
