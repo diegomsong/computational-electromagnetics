@@ -1,7 +1,8 @@
 % Simulation parameters.
-SIZE = 512; % No. of spatial steps
-MaxTime = SIZE*8; % No. of time steps
-PulseWidth = SIZE/4; % Controls width of Gaussian Pulse
+Scalar = 8;
+SIZE = 128*Scalar; % No. of spatial steps
+MaxTime = SIZE*2*Scalar; % No. of time steps
+PulseWidth = SIZE/Scalar; % Controls width of Gaussian Pulse
 td = PulseWidth; % Temporal delay in pulse.
 imp0 = 377.0; % Impedence of free space
 source = 3; % Location of source
@@ -22,7 +23,7 @@ Sc = c * dt/dz
 SourceChoice = 2;
 
 l = PulseWidth*dz;
-f = c/(1*l)
+f = 0.8727e12%c/(1*l)
 fmax = 1/(2*dt)
 w = 2*pi*f;
 k0 = w/c; % Free space wave number.
@@ -39,7 +40,7 @@ er2 = 1;
 ur1 = 1;
 ur2 = 1;
 sig1 = 0;
-sig2 = 100;
+sig2 = 300;
 sigm1 = 0;
 sigm2 = 0;
 
@@ -70,6 +71,16 @@ Ex = zeros(SIZE, MaxTime); % x-component of E-field
 Hy = zeros(SIZE, MaxTime); % y-component of H-field
 PLOT1(1) = 0; % Data for plotting.
 
+% Amplitude and phase calculations.
+t1 = floor(MaxTime/Scalar)
+t2 = floor(t1+1/f/4/dt)
+ExAbs = zeros(SIZE, 1);
+ExPhase = zeros(SIZE, 1);
+HyAbs = zeros(SIZE, 1);
+HyPhase = zeros(SIZE, 1);
+ExPhasor = zeros(SIZE, 1);
+HyPhasor = zeros(SIZE, 1);
+
 % Outer loop for time-stepping.
 tic
 for q = 2:MaxTime
@@ -94,6 +105,12 @@ for q = 2:MaxTime
     % ABC for E at 1.
     %Ex(1,q) = Ex(2,q-1) + (Sc-1)/(Sc+1)*(Ex(2,q) - Ex(2,q-1));
     
+    % Recording absolute value
+    if q > floor(MaxTime/Scalar)
+    ExAbs = max(ExAbs, abs(Ex(:,q)));
+    HyAbs = max(HyAbs, abs(Hy(:,q)));
+    end
+    
     % Source.
     if SourceChoice == 1
     Ex(source,q) = Ex(source,q) + exp( -1*((q-td)/(PulseWidth/4))^2 ) * Sc;
@@ -108,8 +125,9 @@ for q = 2:MaxTime
 end
 toc
 % Simulation animation.
-for i=1:MaxTime
+for i=1:Scalar*4:MaxTime
     figure (2)
+    subplot(211)
     hold off
     plot([(Partition)*dz/Ra (Partition)*dz/Ra], [-1.1 1.1], 'Color', 'r');
     hold on
@@ -118,4 +136,162 @@ for i=1:MaxTime
     ylim([-1.1 1.1])
     xlabel('r/Ra')
     ylabel('Electric field (Ex)')
+    
+    subplot(212)
+    hold off
+    plot([(Partition)*dz/Ra (Partition)*dz/Ra], [-1.1 1.1], 'Color', 'r');
+    hold on
+    plot((0:SIZE-1)*dz/Ra,Hy(:,i))
+    xlim([0 (SIZE-1)*dz/Ra])
+    ylim([-1.1/imp0 1.1/imp0])
+    xlabel('r/Ra')
+    ylabel('Magnetic field (Hy)')
 end
+
+figure(3)
+subplot(211)
+hold off
+plot([(Partition)*dz/Ra (Partition)*dz/Ra], [-1.1 1.1], 'Color', 'r');
+hold on
+plot((0:SIZE-1)*dz/Ra,ExAbs)
+xlim([0 (SIZE-1)*dz/Ra])
+ylim([-1.1 1.1])
+xlabel('r/Ra')
+ylabel('Electric field (Ex)')
+
+subplot(212)
+hold off
+plot([(Partition)*dz/Ra (Partition)*dz/Ra], [-1.1 1.1], 'Color', 'r');
+hold on
+plot((0:SIZE-1)*dz/Ra,HyAbs)
+xlim([0 (SIZE-1)*dz/Ra])
+ylim([-1.1/imp0 1.1/imp0])
+xlabel('r/Ra')
+ylabel('Magnetic field (Hy)')
+
+figure(4)
+hold off
+plot([(Partition)*dz/Ra (Partition)*dz/Ra], [-1.1 1.1], 'Color', 'r');
+hold on
+plot((0:SIZE-1)*dz/Ra,ExAbs./HyAbs)
+xlim([0 (SIZE-1)*dz/Ra])
+%ylim([-1.1/imp0 1.1/imp0])
+xlabel('r/Ra')
+ylabel('Magnitude of wave impedance')
+
+% ================== Postprocessing =====================
+% Reference: Chapter 5 section 5.6 from Understanding FDTD.
+% for i=1:SIZE
+%     if abs(Ex(i,t1)) < 1e-12 && Ex(i,t2) > 0
+%         ExPhase(i) = -pi/2;
+%     elseif abs(Ex(i,t1)) < 1e-12 && Ex(i,t2) > 0
+%         ExPhase(i) = -pi/2;
+%     else
+%         ExPhase(i) = atan((cos(2*pi*f*t2*dt)-Ex(i,t2)/Ex(i,t1))/(sin(2*pi*f*t2*dt)));
+%     end
+%     if abs(Hy(i,t1)) < 1e-12 && Hy(i,t2) > 0
+%         HyPhase(i) = -pi/2;
+%     elseif abs(Hy(i,t1)) < 1e-12 && Hy(i,t2) > 0
+%         HyPhase(i) = -pi/2;
+%     else
+%         HyPhase(i) = atan((cos(2*pi*f*t2*dt)-Hy(i,t2)/Hy(i,t1))/(sin(2*pi*f*t2*dt)));
+%     end
+% end
+% 
+% for i=1:SIZE
+%     if abs(Ex(i,t1)) >= abs(Ex(i,t2))
+%         ExAbs(i) = Ex(i,t1)/cos(ExPhase(i));
+%     else
+%         ExAbs(i) = Ex(i,t2)/(cos(2*pi*f*t2*dt)*cos(ExPhase(i))-sin(2*pi*f*t2*dt)*sin(ExPhase(i)));
+%     end
+%     if abs(Hy(i,t1)) >= abs(Hy(i,t2))
+%         HyAbs(i) = Hy(i,t1)/cos(HyPhase(i));
+%     else
+%         HyAbs(i) = Hy(i,t2)/(cos(2*pi*f*t2*dt)*cos(HyPhase(i))-sin(2*pi*f*t2*dt)*sin(HyPhase(i)));
+%     end
+% end
+% 
+% for i=1:SIZE
+%     if ExAbs(i) < 0 && ExPhase(i) >= 0
+%         ExAbs(i) = -1*ExAbs(i);
+%         ExPhase(i) = ExPhase(i)-pi;
+%     elseif ExAbs(i) < 0 && ExPhase(i) < 0
+%         ExAbs(i) = -1*ExAbs(i);
+%         ExPhase(i) = ExPhase(i)+pi;
+%     end
+%     if HyAbs(i) < 0 && HyPhase(i) >= 0
+%         HyAbs(i) = -1*HyAbs(i);
+%         HyPhase(i) = HyPhase(i)-pi;
+%     elseif HyAbs(i) < 0 && HyPhase(i) < 0
+%         HyAbs(i) = -1*HyAbs(i);
+%         HyPhase(i) = HyPhase(i)+pi;
+%     end
+% end
+
+ExPhase = acos(Ex(:,MaxTime)./ExAbs);
+HyPhase = acos(Hy(:,MaxTime)./HyAbs);
+ExPhasor = ExAbs.*exp(1j.*ExPhase);
+HyPhasor = HyAbs.*exp(1j.*HyPhase);
+
+figure(5)
+subplot(211)
+hold off
+plot([(Partition)*dz/Ra (Partition)*dz/Ra], [-1.1 1.1], 'Color', 'r');
+hold on
+plot((0:SIZE-1)*dz/Ra,ExAbs)
+xlim([0 (SIZE-1)*dz/Ra])
+ylim([-1.1 1.1])
+xlabel('r/Ra')
+ylabel('Magnitude of Electric field (Ex)')
+
+subplot(212)
+hold off
+plot([(Partition)*dz/Ra (Partition)*dz/Ra], [-1.1 1.1], 'Color', 'r');
+hold on
+plot((0:SIZE-1)*dz/Ra,ExPhase)
+xlim([0 (SIZE-1)*dz/Ra])
+ylim([-pi pi])
+xlabel('r/Ra')
+ylabel('Phase')
+
+figure(6)
+subplot(211)
+hold off
+plot([(Partition)*dz/Ra (Partition)*dz/Ra], [-1.1 1.1], 'Color', 'r');
+hold on
+plot((0:SIZE-1)*dz/Ra,HyAbs)
+xlim([0 (SIZE-1)*dz/Ra])
+ylim([-1.1/imp0 1.1/imp0])
+xlabel('r/Ra')
+ylabel('Magnitude of Magnetic field (Hy)')
+
+subplot(212)
+hold off
+plot([(Partition)*dz/Ra (Partition)*dz/Ra], [-1.1 1.1], 'Color', 'r');
+hold on
+plot((0:SIZE-1)*dz/Ra,HyPhase)
+xlim([0 (SIZE-1)*dz/Ra])
+ylim([-pi pi])
+xlabel('r/Ra')
+ylabel('Phase')
+
+figure(7)
+subplot(211)
+hold off
+plot([(Partition)*dz/Ra (Partition)*dz/Ra], [-1.1 1.1], 'Color', 'r');
+hold on
+plot((0:SIZE-1)*dz/Ra,real(ExPhasor./HyPhasor))
+xlim([0 (SIZE-1)*dz/Ra])
+%ylim([-1.1/imp0 1.1/imp0])
+xlabel('r/Ra')
+ylabel('Real part of wave impedance')
+
+subplot(212)
+hold off
+plot([(Partition)*dz/Ra (Partition)*dz/Ra], [-1.1 1.1], 'Color', 'r');
+hold on
+plot((0:SIZE-1)*dz/Ra,imag(ExPhasor./HyPhasor))
+xlim([0 (SIZE-1)*dz/Ra])
+%ylim([-1.1/imp0 1.1/imp0])
+xlabel('r/Ra')
+ylabel('Imag part of wave impedance')
