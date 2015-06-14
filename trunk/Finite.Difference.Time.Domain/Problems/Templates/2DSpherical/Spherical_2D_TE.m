@@ -17,7 +17,7 @@ Ra = 150e-6;
 % 1. Gaussian 2. Sine wave 3. Ricker wavelet
 SourceChoice = 2;
 
-SaveFields = 1; % 0. No, 1. Yes.
+SaveFields = 0; % 0. No, 1. Yes.
 SnapshotResolution = 1; % Snapshot resolution. 1 is best.
 SnapshotInterval = 8*Scalar; % Amount of time delay between snaps.
 
@@ -33,7 +33,7 @@ dphi = 2*pi/SIZEphi;
 Sc = c*dt/dr
 
 l = PulseWidth*dr;
-f = 0.8727e13%c/(1*l)
+f = 703.6e9%0.8727e12%c/(1*l)
 fmax = 1/(2*dt)
 w = 2*pi*f;
 k0 = w/c; % Free space wave number.
@@ -50,7 +50,7 @@ er2 = 1;
 ur1 = 1;
 ur2 = 1;
 sig1 = 0;
-sig2 = 1e3;
+sig2 = 1e2;
 sigm1 = 0;
 sigm2 = 0;
 
@@ -131,16 +131,16 @@ end
 % Amplitude and phase calculations.
 t1 = floor(MaxTime/Scalar)
 t2 = floor(t1+1/f/4/dt)
-% EzAbs = zeros(SIZE, SIZE);
-% EzPhase = zeros(SIZE, SIZE);
-% HxAbs = zeros(SIZE, SIZE+1);
-% HxPhase = zeros(SIZE, SIZE+1);
-% HyAbs = zeros(SIZE+1, SIZE);
-% HyPhase = zeros(SIZE+1, SIZE);
-% 
-% EzPhasor = zeros(SIZE, SIZE);
-% HxPhasor = zeros(SIZE, SIZE+1);
-% HyPhasor = zeros(SIZE+1, SIZE);
+EthetaAbs = zeros(SIZEr, SIZEphi);
+EthetaPhase = zeros(SIZEr, SIZEphi);
+HrAbs = zeros(SIZEr, SIZEphi);
+HrPhase = zeros(SIZEr, SIZEphi);
+HphiAbs = zeros(SIZEr, SIZEphi);
+HphiPhase = zeros(SIZEr, SIZEphi);
+ 
+EthetaPhasor = zeros(SIZEr, SIZEphi);
+HrPhasor = zeros(SIZEr, SIZEphi);
+HphiPhasor = zeros(SIZEr, SIZEphi);
 
 EthetaSaved = zeros(SIZEr, MaxTime);
 
@@ -183,15 +183,19 @@ for q = 2:MaxTime
     
     Etheta = Ethetar + Ethetaphi;
     EthetaSaved(:,q) = Etheta(:,1);
+    
+    sourceX = Partition-1;
     % Recording absolute value
-%     if q > floor(MaxTime/Scalar)
-%     EzAbs = max(EzAbs, abs(Ez(:,:)));
-%     HxAbs = max(HxAbs, abs(Hx(:,:)));
-%     HyAbs = max(HyAbs, abs(Hy(:,:)));
-%     end
+    if q > floor(MaxTime/Scalar/2)
+    EthetaAbs = max(EthetaAbs, abs(Etheta(:,:)));
+    HrAbs = max(HrAbs, abs(Hr(:,:)));
+    HphiAbs = max(HphiAbs, abs(Hphi(:,:)));
+    EthetaAbs(sourceX,:) = (EthetaAbs(sourceX+1,:) + EthetaAbs(sourceX-1,:))./2;
+    %HrAbs(sourceX,:) = (HrAbs(sourceX+1,:) + HrAbs(sourceX-1,:))./2;
+    %HphiAbs(sourceX,:) = (HphiAbs(sourceX+1,:) + HphiAbs(sourceX-1,:))./2;
+    end
     
     % Source.
-    sourceX = Partition-1;
     if q < floor(MaxTime)
         if SourceChoice == 1
         Etheta(sourceX,sourceY) = Etheta(sourceX,sourceY) + exp( -1*((q-td)/(PulseWidth/4))^2 ) * Sc;
@@ -285,15 +289,15 @@ end
 % xlabel('r/Ra')
 % ylabel('Magnetic field (Hy)')
 % 
-% figure(4)
-% hold off
-% plot([(Partition)*dz/Ra (Partition)*dz/Ra], [-1.1 1.1], 'Color', 'r');
-% hold on
-% plot((0:SIZE-1)*dz/Ra,ExAbs./HyAbs)
-% xlim([0 (SIZE-1)*dz/Ra])
-% %ylim([-1.1/imp0 1.1/imp0])
-% xlabel('r/Ra')
-% ylabel('Magnitude of wave impedance')
+figure(4)
+hold off
+plot([(Partition)*dr/Ra (Partition)*dr/Ra], [-1.1 1.1], 'Color', 'r');
+hold on
+plot((0:SIZEr-1)*dr/Ra,EthetaAbs./HphiAbs)
+xlim([0 (SIZEr-1)*dr/Ra])
+%ylim([-1.1/imp0 1.1/imp0])
+xlabel('r/Ra')
+ylabel('Magnitude of wave impedance')
 % 
 % % ================== Postprocessing =====================
 % % Reference: Chapter 5 section 5.6 from Understanding FDTD.
@@ -344,10 +348,10 @@ end
 % %     end
 % % end
 % 
-% ExPhase = acos(Ex(:,MaxTime)./ExAbs);
-% HyPhase = acos(Hy(:,MaxTime)./HyAbs);
-% ExPhasor = ExAbs.*exp(1j.*ExPhase);
-% HyPhasor = HyAbs.*exp(1j.*HyPhase);
+EthetaPhase = acos(Etheta./EthetaAbs);
+HphiPhase = acos(Hphi./HphiAbs);
+EthetaPhasor = EthetaAbs.*exp(1j.*EthetaPhase);
+HphiPhasor = HphiAbs.*exp(1j.*HphiPhase);
 % 
 % figure(5)
 % subplot(211)
@@ -394,20 +398,20 @@ end
 % figure(7)
 % subplot(211)
 % hold off
-% plot([(Partition)*dz/Ra (Partition)*dz/Ra], [-1.1 1.1], 'Color', 'r');
+% plot([(Partition)*dr/Ra (Partition)*dr/Ra], [-1.1 1.1], 'Color', 'r');
 % hold on
-% plot((0:SIZE-1)*dz/Ra,real(ExPhasor./HyPhasor))
-% xlim([0 (SIZE-1)*dz/Ra])
+% plot((0:SIZEr-1)*dr/Ra,real(EthetaPhasor./HphiPhasor))
+% xlim([0 (SIZEr-1)*dr/Ra])
 % %ylim([-1.1/imp0 1.1/imp0])
 % xlabel('r/Ra')
 % ylabel('Real part of wave impedance')
 % 
 % subplot(212)
 % hold off
-% plot([(Partition)*dz/Ra (Partition)*dz/Ra], [-1.1 1.1], 'Color', 'r');
+% plot([(Partition)*dr/Ra (Partition)*dr/Ra], [-1.1 1.1], 'Color', 'r');
 % hold on
-% plot((0:SIZE-1)*dz/Ra,imag(ExPhasor./HyPhasor))
-% xlim([0 (SIZE-1)*dz/Ra])
+% plot((0:SIZEr-1)*dr/Ra,imag(EthetaPhasor./HphiPhasor))
+% xlim([0 (SIZEr-1)*dr/Ra])
 % %ylim([-1.1/imp0 1.1/imp0])
 % xlabel('r/Ra')
 % ylabel('Imag part of wave impedance')
