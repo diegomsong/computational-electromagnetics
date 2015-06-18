@@ -156,10 +156,10 @@ for q = 2:MaxTime
     i=1:SIZEr;
     j=2:SIZEphi;
     % Calculation of Er using update difference equation for Er. This is time step q.
-    Er(i,j) = (1-sigphi(i,j)*dt./(2*epsEr(i,j)))./(1+sigphi(i,j)*dt./(2*epsEr(i,j))).*Er(i,j) + ((Htheta(i,j).*rialt(i,j) - Htheta(i,j-1).*rialt(i,j-1)) .* ((dt./(dphi*epsEr(i,j).*rialt(i,j).^2))./(1+sigphi(i,j)*dt./(2*epsEr(i,j)))));
+    Er(i,j) = (1-sigphi(i,j)*dt./(2*epsEr(i,j)))./(1+sigphi(i,j)*dt./(2*epsEr(i,j))).*Er(i,j) + ((Htheta(i,j-1).*rialt(i,j-1) - Htheta(i,j).*rialt(i,j)) .* ((dt./(dphi*epsEr(i,j).*rialt(i,j).^2))./(1+sigphi(i,j)*dt./(2*epsEr(i,j)))));
     % PBC for Er
     j=1;
-    Er(i,j) = (1-sigphi(i,j)*dt./(2*epsEr(i,j)))./(1+sigphi(i,j)*dt./(2*epsEr(i,j))).*Er(i,j) + ((Htheta(i,j).*rialt(i,j) - Htheta(i,SIZEphi).*rialt(i,SIZEphi)) .* ((dt./(dphi*epsEr(i,j).*rialt(i,j).^2))./(1+sigphi(i,j)*dt./(2*epsEr(i,j)))));
+    Er(i,j) = (1-sigphi(i,j)*dt./(2*epsEr(i,j)))./(1+sigphi(i,j)*dt./(2*epsEr(i,j))).*Er(i,j) + ((Htheta(i,SIZEphi).*rialt(i,SIZEphi) - Htheta(i,j).*rialt(i,j)) .* ((dt./(dphi*epsEr(i,j).*rialt(i,j).^2))./(1+sigphi(i,j)*dt./(2*epsEr(i,j)))));
         
     i=1:SIZEr-1;
     j=1:SIZEphi;
@@ -348,65 +348,65 @@ EphiPhase = acos(Ephi./EphiAbs);
 HthetaPhasor = HthetaAbs.*exp(1j.*HthetaPhase);
 EphiPhasor = EphiAbs.*exp(1j.*EphiPhase);
 % 
-% figure(5)
-% subplot(211)
-% hold off
-% plot([(Partition)*dz/Ra (Partition)*dz/Ra], [-1.1 1.1], 'Color', 'r');
-% hold on
-% plot((0:SIZE-1)*dz/Ra,ExAbs)
-% xlim([0 (SIZE-1)*dz/Ra])
-% ylim([-1.1 1.1])
-% xlabel('r/Ra')
-% ylabel('Magnitude of Electric field (Ex)')
+figure(5)
+subplot(211)
+hold off
+plot([(Partition)*dr/Ra (Partition)*dr/Ra], [-1.1 1.1], 'Color', 'r');
+hold on
+plot((0:SIZEr-1)*dr/Ra,EphiAbs)
+xlim([0 (SIZEr-1)*dr/Ra])
+ylim([-1.1 1.1])
+xlabel('r/Ra')
+ylabel('Magnitude of Electric field (Ex)')
+
+subplot(212)
+hold off
+plot([(Partition)*dr/Ra (Partition)*dr/Ra], [-1.1 1.1], 'Color', 'r');
+hold on
+plot((0:SIZEr-1)*dr/Ra,EphiPhase)
+xlim([0 (SIZEr-1)*dr/Ra])
+ylim([-pi pi])
+xlabel('r/Ra')
+ylabel('Phase')
 % 
-% subplot(212)
-% hold off
-% plot([(Partition)*dz/Ra (Partition)*dz/Ra], [-1.1 1.1], 'Color', 'r');
-% hold on
-% plot((0:SIZE-1)*dz/Ra,ExPhase)
-% xlim([0 (SIZE-1)*dz/Ra])
-% ylim([-pi pi])
-% xlabel('r/Ra')
-% ylabel('Phase')
+figure(6)
+subplot(211)
+hold off
+plot([(Partition)*dr/Ra (Partition)*dr/Ra], [-1.1 1.1], 'Color', 'r');
+hold on
+plot((0:SIZEr-1)*dr/Ra,HthetaAbs)
+xlim([0 (SIZEr-1)*dr/Ra])
+ylim([-1.1/imp0 1.1/imp0])
+xlabel('r/Ra')
+ylabel('Magnitude of Magnetic field (Hy)')
+
+subplot(212)
+hold off
+plot([(Partition)*dr/Ra (Partition)*dr/Ra], [-1.1 1.1], 'Color', 'r');
+hold on
+plot((0:SIZEr-1)*dr/Ra,HthetaPhase)
+xlim([0 (SIZEr-1)*dr/Ra])
+ylim([-pi pi])
+xlabel('r/Ra')
+ylabel('Phase')
 % 
-% figure(6)
-% subplot(211)
-% hold off
-% plot([(Partition)*dz/Ra (Partition)*dz/Ra], [-1.1 1.1], 'Color', 'r');
-% hold on
-% plot((0:SIZE-1)*dz/Ra,HyAbs)
-% xlim([0 (SIZE-1)*dz/Ra])
-% ylim([-1.1/imp0 1.1/imp0])
-% xlabel('r/Ra')
-% ylabel('Magnitude of Magnetic field (Hy)')
-% 
-% subplot(212)
-% hold off
-% plot([(Partition)*dz/Ra (Partition)*dz/Ra], [-1.1 1.1], 'Color', 'r');
-% hold on
-% plot((0:SIZE-1)*dz/Ra,HyPhase)
-% xlim([0 (SIZE-1)*dz/Ra])
-% ylim([-pi pi])
-% xlabel('r/Ra')
-% ylabel('Phase')
-% 
-% figure(7)
-% subplot(211)
-% hold off
-% plot([(Partition)*dr/Ra (Partition)*dr/Ra], [-1.1 1.1], 'Color', 'r');
-% hold on
-% plot((0:SIZEr-1)*dr/Ra,real(EthetaPhasor./HphiPhasor))
-% xlim([0 (SIZEr-1)*dr/Ra])
-% %ylim([-1.1/imp0 1.1/imp0])
-% xlabel('r/Ra')
-% ylabel('Real part of wave impedance')
-% 
-% subplot(212)
-% hold off
-% plot([(Partition)*dr/Ra (Partition)*dr/Ra], [-1.1 1.1], 'Color', 'r');
-% hold on
-% plot((0:SIZEr-1)*dr/Ra,imag(EthetaPhasor./HphiPhasor))
-% xlim([0 (SIZEr-1)*dr/Ra])
-% %ylim([-1.1/imp0 1.1/imp0])
-% xlabel('r/Ra')
-% ylabel('Imag part of wave impedance')
+figure(7)
+subplot(211)
+hold off
+plot([(Partition)*dr/Ra (Partition)*dr/Ra], [-1.1 1.1], 'Color', 'r');
+hold on
+plot((0:SIZEr-1)*dr/Ra,real(EphiPhasor./HthetaPhasor))
+xlim([0 (SIZEr-1)*dr/Ra])
+%ylim([-1.1/imp0 1.1/imp0])
+xlabel('r/Ra')
+ylabel('Real part of wave impedance')
+
+subplot(212)
+hold off
+plot([(Partition)*dr/Ra (Partition)*dr/Ra], [-1.1 1.1], 'Color', 'r');
+hold on
+plot((0:SIZEr-1)*dr/Ra,imag(EphiPhasor./HthetaPhasor))
+xlim([0 (SIZEr-1)*dr/Ra])
+%ylim([-1.1/imp0 1.1/imp0])
+xlabel('r/Ra')
+ylabel('Imag part of wave impedance')
